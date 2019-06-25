@@ -1,7 +1,9 @@
 package chat
 
 import (
+	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"gochat/db"
 	"log"
 	"sort"
@@ -15,12 +17,17 @@ func encodeMessageId(first string, second string) (string) {
 	if err != nil {
 		log.Println(err)
 	}
-	return string(v)
+	return base64.StdEncoding.EncodeToString(v)
 }
 
 func decodeMessageId(v string) (first string, second string) {
+	b, e := base64.StdEncoding.DecodeString(v)
+	if e != nil {
+		log.Println(e)
+		return
+	}
 	ss := []string{}
-	if err := json.Unmarshal([]byte(v), &ss); err != nil {
+	if err := json.Unmarshal(b, &ss); err != nil {
 		log.Println(err)
 	} else if len(ss) == 2 {
 		first = ss[0]
@@ -36,34 +43,56 @@ func SendMessage(message db.Message) {
 		log.Println(err)
 		return
 	}
+
+	var e error
 	// 单聊
 	if message.MessageType == db.MessageTypeSigleChat {
-		SendToUser(message.From, message.To, string(msg))
-
+		e = sendToUser(message.From, message.To, string(msg))
 	}
 
 	// 群聊
 	 if message.MessageType == db.MessageTypeGroupChat {
-		SendToRoom(message.From, message.To, string(msg))
+		e =	sendToRoom(message.From, message.To, string(msg))
 	 }
+
+	if e != nil {
+		return
+	}
+
+	// 单聊时，将to字段统一处理
+	if message.MessageType == db.MessageTypeSigleChat {
+		message.To = encodeMessageId(message.From, message.To)
+	}
+ 	if	dbErr := db.DB.Create(&message).Error; dbErr != nil {
+ 		log.Println(dbErr)
+	}
 }
 
 
-func SendToRoom(from string, roomId string, content string) {
+func sendToRoom(from string, roomId string, content string) (error) {
 	socket, exited := SocketBucket.LoadWithId(from)
 	if !exited {
 		log.Println("用户'", from, "'不存在")
-		return
+		return errors.New("用户不存在")
 	}
 	room := db.Room{}
 	err := db.DB.Where(&db.Room{RoomId:roomId}).First(&room).Error
 	if err != nil {
 		log.Println(err)
-		return
+		return err
 	}
 
 	users := []db.User{}
 	err = db.DB.Model(&room).Association("Users").Find(&users).Error
+
+	if err != nil {
+		log.Println(err)
+		_err := socket.SendMessage([]byte(err.Error()))
+		if _err != nil {
+			log.Println(_err)
+		}
+		return err
+	}
 
 	var isInRoom = false
 	for _, u := range users {
@@ -77,16 +106,7 @@ func SendToRoom(from string, roomId string, content string) {
 		if err != nil {
 			log.Println(err)
 		}
-		return
-	}
-
-	if err != nil {
-		log.Println(err)
-		err := socket.SendMessage([]byte(err.Error()))
-		if err != nil {
-			log.Println(err)
-		}
-		return
+		return err
 	}
 
 	for _, u := range users {
@@ -99,30 +119,30 @@ func SendToRoom(from string, roomId string, content string) {
 			log.Println(err)
 		}
 	}
-
-	// TODO: 将消息存到数据库中
+	var e error
+	return  e
 }
 
-func SendToUser(from string, to string, message string,) {
+func sendToUser(from string, to string, message string,) (error) {
 
 	s, exited := SocketBucket.LoadWithId(from)
 	if !exited {
 		println("'", from, "'不在线")
-		return
+		return errors.New("不在线")
 	}
 
 	user := db.User{}
 	dbErr := db.DB.Where(&db.User{UserName:from}).First(&user).Error
 	if dbErr != nil {
 		log.Println(dbErr)
-		return
+		return dbErr
 	}
 
 	friends := []db.User{}
 	dbErr = db.DB.Model(&user).Association("Friends").Find(&friends).Error
 	if dbErr != nil {
 		log.Println(dbErr)
-		return
+		return dbErr
 	}
 
 	isFriend := false
@@ -136,15 +156,16 @@ func SendToUser(from string, to string, message string,) {
 		if err := s.SendMessage([]byte("只能给好友发送消息")); err != nil {
 			println(err)
 		}
-		return
+		return errors.New("只能给好友发送消息")
 	}
 	toS, exited := SocketBucket.LoadWithId(to)
 	if !exited {
-		return
+		return errors.New("用户不存在")
 	}
 	err := toS.SendMessage([]byte(message))
 	if err != nil {
 		log.Println(err)
 	}
-	// TODO: 将消息存到数据库中 发送之后将to转成数据库保存的方式(使用「encodeMessageId」和「decodeMessageId」)
+	var e error
+	return  e
 }

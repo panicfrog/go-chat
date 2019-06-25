@@ -24,3 +24,21 @@ func TestMessageId(t *testing.T) {
 		t.Error(e)
 	}
 }
+
+func TestMessageIDDecode(t *testing.T) {
+	f, s := decodeMessageId("WyJ4aWFvbGlhbmciLCJ4aWFvbml1Il0=")
+	if f == "xiaoniu" {
+		if s != "xiaoliang" {
+			e := fmt.Sprintf("f: %s, s: %s", f, s)
+			t.Error(e)
+		}
+	} else if f == "xiaoliang" {
+		if s != "xiaoniu" {
+			e := fmt.Sprintf("f: %s, s: %s", f, s)
+			t.Error(e)
+		}
+	} else {
+		e := fmt.Sprintf("f: %s, s: %s", f, s)
+		t.Error(e)
+	}
+}

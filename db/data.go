@@ -26,7 +26,7 @@ type User struct {
 
 type Message struct {
 	gorm.Model				`json:"-"`
-	MessageId string  		`gorm:"type:varchar(100);not null;unique" json:"message_id"`
+	MessageId string  		`gorm:"type:varchar(100);not null" json:"message_id"`
 	MessageType MessageType `json:"message_type" json:"message_type"`
 	From string 			`gorm:"type:varchar(50);not null" json:"from"`
 	To string				`gorm:"type:varchar(100);not null" json:"to"`
