@@ -15,4 +15,4 @@
     1. chat to sigle people
     2. chat to a room
 #### Docs:
-    [doc]: https://documenter.getpostman.com/view/667548/S1a4XS3y?version=latest
+   [Api Docs](https://documenter.getpostman.com/view/667548/S1a4XS3y?version=latest)
