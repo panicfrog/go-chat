@@ -1,12 +1,13 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
 	"gochat/api/controller"
 	"gochat/chat"
+
+	"github.com/gin-gonic/gin"
 )
 
-func HandleV1(r *gin.Engine)  {
+func HandleV1(r *gin.Engine) {
 	v1Group := r.Group("v1")
 	controller.CommonHandle(v1Group)
 	controller.HandleUser(v1Group)

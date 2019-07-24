@@ -9,7 +9,7 @@ import (
 var DB *gorm.DB
 
 var diverName = "mysql"
-var dataSource = "root:123456@(127.0.0.1:3306)/go_chat?charset=utf8&parseTime=True&loc=Local"
+var dataSource = "chat:3851123yw@(127.0.0.1:3306)/go_chat?charset=utf8&parseTime=True&loc=Local"
 
 func init() {
 	var err error
